@@ -8,6 +8,7 @@ import Pagination from '@mui/material/Pagination';
 import Stack from '@mui/material/Stack';
 import CircularProgress from '@mui/material/CircularProgress';
 import TextField from '@mui/material/TextField';
+import Autocomplete from '@mui/material/Autocomplete';
 
 import AlertDialog from '../library/AlertDialog';
 import AlertMessage from '../library/AlertMessage';
@@ -26,11 +27,18 @@ const TransactionList = () => {
   const [totalPages, setTotalPages] = useState(1);
  
   const [searchPrice, setsearchPrice] = useState('');
+  
+  const [searchDate, setsearchDate] = useState('');
   const [searchQuantity, setsearchQuantity] = useState('');
   const [loading, setLoading] = useState(true);
 
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('');
+
+  const [product, setProduct] = useState([]);
+
+  const [filteredProducts, setFilteredProducts] = useState([]);
+
 
 
   const [open, setOpen] = useState(false);
@@ -94,10 +102,12 @@ const TransactionList = () => {
       });
   }, []); // Empty dependency array to ensure it runs only once
 
-  const handleChange = (event) => {
+  const handleChangeCategory = (event) => {
     setSelectedCategory(event.target.value);
     console.log(event.target.value);
   };
+
+  
 
 
   useEffect(() => {
@@ -105,7 +115,7 @@ const TransactionList = () => {
       setLoading(true);
 
       // Lakukan pemanggilan API ke endpoint yang mengimplementasikan paginasi server-side
-      const response = await fetch(`http://127.0.0.1:8000/api/transaction?page=${currentPage}&perPage=${perPage}&category=${selectedCategory}&price=${searchPrice}&quantity=${searchQuantity}`);
+      const response = await fetch(`http://127.0.0.1:8000/api/transaction?page=${currentPage}&perPage=${perPage}&category=${selectedCategory}&product=${filteredProducts}&price=${searchPrice}&quantity=${searchQuantity}&date=${searchDate}`);
       const result = await response.json();
 
       setData(result.data);
@@ -115,12 +125,24 @@ const TransactionList = () => {
     };
 
     fetchData();
-  }, [currentPage, perPage,searchPrice,searchQuantity,selectedCategory]);
+  }, [currentPage, perPage,searchPrice,searchQuantity,selectedCategory,filteredProducts,searchDate]);
 
 
 
   const handlePageChange = (event, newPage) => {
     setCurrentPage(newPage);
+  };
+
+  const handleSearchDate = (date) =>{
+    setsearchDate(date);
+    
+    console.log(formatDate(date));
+    
+  }
+
+  const formatDate = (date) => {
+    const formattedDate = `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
+    return formattedDate;
   };
 
 
@@ -153,6 +175,42 @@ const TransactionList = () => {
     setOpenModal(false);
   };
 
+
+  useEffect(() => {
+    // Panggil API untuk mendapatkan product data kategori
+    axios.get(`http://127.0.0.1:8000/api/product?category=${selectedCategory}`)
+      .then(response => {
+        setProduct(response.data);
+      })
+      .catch(error => {
+        console.error('Error fetching product:', error);
+      });
+  }, [selectedCategory]); 
+
+
+  useEffect(() => {
+    console.log(filteredProducts);
+  }, [filteredProducts]);
+
+
+  const handleProductChange = (event, newInputValue) => {
+    // Filter produk berdasarkan nilai input Autocomplete
+    const filtered = product.filter((product) =>
+      product.name.toLowerCase().includes(newInputValue.toLowerCase())
+    );
+    //setFilteredProducts(filtered);
+  
+    
+    if (filtered.length === 1) {
+      setFilteredProducts(filtered[0].id);
+    } else {
+      setFilteredProducts('');
+    }
+
+  };
+
+
+
   return (
     <div>
         <div className='container'>
@@ -163,29 +221,50 @@ const TransactionList = () => {
 
       
 
-              <Button onClick={handleOpenModal}>Buka Modal</Button>
-      <ModalDialog isOpen={openModal} handleCloseModal={handleCloseModal} />
+              <button onClick={handleOpenModal}>Open Modal</button>
+            <ModalDialog open={openModal} handleClose={handleCloseModal}>
+              {/* Konten modal di sini */}
+              <h2>Modal Content</h2>
+              <p>11111111111111111111111111111111111111111111111111111111</p>
+            </ModalDialog>
+
  
-                <FormControl >
-                <InputLabel id="category-label">Pilih Kategori</InputLabel>
-                <Select
-                  labelId="category-label"
-                  id="category"
-                  value={selectedCategory}
-                  label="Pilih Kategori"
-                  onChange={handleChange}
-                >
-                   <MenuItem key="Select" value="">
-                      All Menu
-                    </MenuItem>
-                  {categories.map(category => (
-                    <MenuItem key={category.id} value={category.id}>
-                      {category.category}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              
+              <div className='row py-4'>
+                <div className='col-md-6'>
+                  <FormControl fullWidth >
+                  <InputLabel id="category-label">Select Category</InputLabel>
+                  <Select
+                    labelId="category-label"
+                    id="category"
+                    value={selectedCategory}
+                    label="Select Catgory"
+                    onChange={handleChangeCategory}
+                  >
+                    <MenuItem key="Select Category" value="">
+                        All Menu
+                      </MenuItem>
+                    {categories.map(category => (
+                      <MenuItem key={category.id} value={category.id}>
+                        {category.category}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                </div>
+                <div className='col-md-6'>
+                <Autocomplete
+                    options={product}
+                    getOptionLabel={(product) => product.name}
+                    onInputChange={handleProductChange}
+                    renderInput={(params) => (
+                  <TextField {...params} label="Select Product" variant="outlined" />
+                  )}
+                />
+                </div>
+
+
+  
+            </div>       
 
               <TextField id="outlined-basic" label="Price" style={{marginLeft: '16px' }}  value={searchPrice} onChange={handleSearchPrice} variant="outlined" />
 
@@ -196,8 +275,8 @@ const TransactionList = () => {
                   value={searchQuantity} onChange={handleSearchQuantity} 
                 />
 
-              <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <DatePicker  /> 
+              <LocalizationProvider  dateAdapter={AdapterDayjs}>
+                <DatePicker selected={searchDate}   onChange={handleSearchDate} /> 
               </LocalizationProvider>
               </div>
 
@@ -216,6 +295,7 @@ const TransactionList = () => {
                 <TableHead>
                   <TableRow>
                     <TableCell>ID</TableCell>
+                    <TableCell>Order Number</TableCell>
                     <TableCell>Product</TableCell>
                     <TableCell>Price</TableCell>
                     <TableCell>Quantity</TableCell>
@@ -228,6 +308,7 @@ const TransactionList = () => {
                   {data.map((row,index) => (
                     <TableRow key={index}   sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
                       <TableCell>{index+1}</TableCell>
+                      <TableCell>{row.order_number}</TableCell>
                       <TableCell>{row.name}</TableCell>
                       <TableCell>{formatCurrency(row.price)}</TableCell>
                       <TableCell>{row.quantity}</TableCell>
