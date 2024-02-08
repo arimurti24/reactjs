@@ -19,7 +19,6 @@ function App() {
     <div>
     <div className="container-fluid">
     <script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="SB-Mid-client-rbzyyA7WhA2gPewS"></script>
-
       <div className='row mb-4'>
         <div className='col-md-12'>
           <nav className="navbar navbar-expand-sm bg-dark navbar-dark">
@@ -39,12 +38,8 @@ function App() {
           </nav>
         </div>
       </div>
-
-      
-
     <Router>
     <Routes>
-      
       <Route path="/" element={<ProductList />} />
       <Route path="/cart" element={<Cart />} />
      <Route path="/TransactionList" element={<TransactionList />} /> 

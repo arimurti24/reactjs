@@ -15,14 +15,24 @@ import ShoppingCartCheckoutIcon from '@mui/icons-material/ShoppingCartCheckout';
 import ShoppingBagIcon from '@mui/icons-material/ShoppingBag';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 
+import Pusher from 'pusher-js';
+
 
 import AlertMessage from '../library/AlertMessage';
 import ModalDialog from '../library/ModalDialog';
 
+
+
+
 const ProductList = () => {
+
+
+
+
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [cartItems, setCartItems] = useState([]);
+
 
   const addToCart = (product) => {
     const existingProductIndex = cartItems.findIndex((item) => item.id === product.id);
@@ -143,19 +153,25 @@ const ProductList = () => {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          const response = await fetch('http://127.0.0.1:8000/api/createTransaction', {
+          const response = await fetch('http://127.0.0.1:8000/api/create-transaction', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ items: cartItems }),
+            body: JSON.stringify({ items: cartItems,payment:payment }),
           });
 
           console.log(cartItems);
-  
+          console.log(payment);
+
           if (response.ok && response.status >= 200 && response.status < 300) {
             // Handle success
             console.log('Cart submitted successfully');
+
+            if(payment==='Cashless'){
+              getPayment();
+            }
+
             Swal.fire(
               'Successfully!',
               'Thankyou for your orders.',
@@ -172,8 +188,7 @@ const ProductList = () => {
           }
 
           setCartItems([]);
-
-
+          
         } catch (error) {
           console.error('Error submitting cart:', error);
           Swal.fire(
@@ -252,17 +267,23 @@ const ProductList = () => {
   }, [snapToken]);
 
 
-  const createTransaction = async () => {
+  const getPayment = async () => {
 
-    console.log(calculateTotal());
-
-   // Panggil endpoint Laravel atau server Anda untuk membuat transaksi dan mendapatkan snapToken
-    const response = await fetch(`http://127.0.0.1:8000/create-transaction?amount=${calculateTotal()}`);
-    const data = await response.json();
-
-    setSnapToken(data.snapToken);
-
-    
+    try {
+      const response = await fetch('http://127.0.0.1:8000/api/get-payment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ amount: calculateTotal() }),
+      });
+  
+      const data = await response.json();
+      setSnapToken(data.snapToken);
+    }  catch (error) {
+      console.error('Error get payment:', error);
+    }
+;
   };
 
 
@@ -294,13 +315,11 @@ const ProductList = () => {
 
         <div className='row'>
             <div className='col-md-8'>
-
-
   
             <ModalDialog open={openModal} handleClose={handleCloseModal}>
               {/* Konten modal di sini */}
               <h2>Modal Content</h2>
-              <p>11111111111111111111111111111111111111111111111111111111</p>
+              <p>111111111111111111111111111111111111101111111111111111111</p>
             </ModalDialog>
 
             <AlertMessage open={deleteItem}  handleSnackbarClose={handleSnackbarClose} severity="error" message="item has been deleted into shopping cart" />
@@ -319,11 +338,6 @@ const ProductList = () => {
             </div>
      
 
-{/*           
-            {selectedTab === 1 && <div>Isi Tab 1</div>}
-            {selectedTab === 2 && <div>Isi Tab 2</div>}
-            {selectedTab === 3 && <div>Isi Tab 3</div>}
-            {selectedTab === 4 && <div>Isi Tab 4</div>} */}
           {loading ? (
             // Tampilkan efek loading saat loading masih aktif
               <div className="loader-container">
@@ -348,31 +362,6 @@ const ProductList = () => {
                   ))}
               </div>
                )}
-{/* 
-
-              {data.map((item, index) => (
-                <div className='col-md-3 mb-3'>
-              <Card sx={{ maxWidth: 345 }}>
-              <CardActionArea>
-                <CardMedia
-                  component="img"
-                  height="140"
-                  image={imageUrl}
-                  alt="green iguana"
-                />
-                <CardContent>
-                  <Typography gutterBottom variant="h5" component="div">
-                  {item.name}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                  {item.description}
-                  </Typography>
-                </CardContent>
-              </CardActionArea>
-            </Card>
-            </div>
-              ))} */}
- 
 
 
             </div>
@@ -426,12 +415,7 @@ const ProductList = () => {
                   </Select>
                 </FormControl>
 
-                { (payment==='Cash') && (
-                  <div className="row py-3"><Button variant="contained" startIcon={<ShoppingCartCheckoutIcon />} className="checkout-btn"  onClick={() => handleCreateTransaction(cartItems)} >Create Order</Button></div>
-                )}
-                   {(payment==='Cashless') && (
-                   <div className="row py-3"><Button variant="contained" startIcon={<PaymentIcon />} className="checkout-btn"  onClick={createTransaction} >Payment Proccess</Button></div>
-                  )}
+                <div className="row py-3"><Button variant="contained" startIcon={<ShoppingCartCheckoutIcon />} className="checkout-btn"  onClick={() => handleCreateTransaction(cartItems)} >Create Order</Button></div>
                 </div>
                   )}
               </div>
